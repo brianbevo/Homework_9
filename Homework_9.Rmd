@@ -1,0 +1,202 @@
+---
+title: "Homework_9 "
+author: "Brian Hu bth997"
+date: "2025-15-10"
+output:
+  html_document: 
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    theme: lumen
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.align = "center")
+
+library(readr)
+library(ggplot2)
+library(tidyverse)
+library(rvest)
+library(mosaic)
+library(MatchIt)
+library(moderndive)
+library(effectsize)
+
+setwd('/Users/brianhu/Desktop/SDS_315')
+solder <- read_csv('solder.csv')
+groceries <- read_csv('groceries.csv')
+
+```
+Github: https://github.com/brianbevo/Homework_9
+
+## Question 1
+
+### Part A
+
+```{r cars}
+
+solder <- read_csv("solder.csv")
+
+ggplot(solder, aes(x = Opening, y = skips)) +  geom_boxplot() +
+  labs( title = "Number of Solder Skips Against the Gun Opening Size", x = "Opening Size", y = "Count of Skips")
+
+```
+This graph of a boxplot shows the number of solder skips based off the given opening size and it can seen that large openings often have the lowest average number of skips then medium openings and finally small openings with the greatest number in average of skips.
+
+
+```{r}
+
+ggplot(solder, aes(x = Solder, y = skips)) + geom_boxplot() + 
+  labs(title = "Number of Solder Skips Against the Alloy Thickness", x = "Solder Thickness", y = "Count of Skips")
+
+```
+
+This boxplot demonstrates the number of solder skips are seen by alloy thickness, and we see that Thin thickeness alloys have a much higher median of skips than the Thick thickness alloys, along with having more and higher outliers.
+
+### Part B
+
+```{r}
+
+skips_mdl <- do(10000)*lm(skips ~ Opening + Solder + Opening:Solder, data = resample(solder))
+confint(skips_mdl, level = .95)
+
+```
+
+Above is a table the shows estimates and has 95% confint applied.
+
+### Part C
+
+
+Starting with the baseline setup—a large opening and thick solder—the average number of solder skips is estimated to be 0.393.
+
+If you switch from a large opening to a medium one while still using thick solder, you can expect the average number of skips to go up by about 2.4. That’s how much more likely skips are with a medium opening compared to the large opening baseline.
+
+Moving from a large to a small opening again with thick solder has an even bigger impact, increasing the average number of skips by roughly 5.1. So, the smaller the opening, the more skips you’re likely to see.
+
+Changing the solder itself from thick to thin while keeping the large opening also increases the average skips—by about 2.3. In other words, thin solder tends to cause more skips than thick solder.
+
+Combining a medium opening with thin solder, the result is actually a bit better than you’d expect from just adding their individual effects. The average number of skips drops by 0.74 compared to what you’d get from simply adding up the separate impacts of medium opening and thin solder.
+
+On the other hand, pairing a small opening with thin solder makes things much worse than expected. This combination leads to an average of 9.65 more skips than you’d get by adding the effects of a small opening and thin solder on their own.
+
+### Part D
+
+6 combinations of solder type and opening size:
+
+Opening Size	Solder Type	Calculation	Estimated # of Skips
+Large	Thick	0.393	  =    0.393
+Large	Thin	0.393 + 2.280	  =    	2.673
+Medium	Thick	0.393 + 2.407	  =    	2.800
+Medium	Thin	0.393 + 2.407 + 2.280 - 0.740	  =    	4.340
+Small	Thick	0.393 + 5.127	  =    	5.520
+Small	Thin	0.393 + 5.127 + 2.280 + 9.653	  =    	17.453
+
+
+Based on these all given combinations, I'd recommend having the large opening size and the thick solder as we can see it has the lowest average number of skips in the process at .393.
+
+## Question 2
+
+```{r}
+groceries <- read_csv("groceries.csv")
+```
+
+### Part A
+
+```{r}
+
+store <- groceries %>% group_by(Store) %>% summarise(AveragePrice = mean(Price, na.rm = TRUE)) %>% arrange(AveragePrice) 
+
+ggplot(store, aes(x = reorder(Store, AveragePrice), y = AveragePrice)) + geom_bar(stat = "identity", fill = "pink") + coord_flip() + 
+  labs( title = "Average Product Price Against Store", x = "Store", y = "Average Price ($)") 
+
+```
+
+The bar graph above shows the distribution of average prices across diferrent stores with Whole Foods having the hghest average price while Fiesta having the lowest price on average.
+
+
+### Part B
+
+```{r}
+
+stores <- groceries %>%  group_by(Product) %>% summarise(NumStores = n()) %>% arrange(NumStores)
+
+ggplot(stores, aes(x = reorder(Product, NumStores), y = NumStores))+ geom_bar(stat = "identity", fill = "yellow") + coord_flip() +
+  labs( title = "Number of Stores Selling Each Product", x = "Product", y = "Number of Stores")
+
+```
+
+The graph above is able to show the distribution of product availability in 16 different locations of stores and the goods Horizon 2 percent Milk and eggs being rpesent in every story while the least accessible product was torilla chips and certain types of cereal brands.
+
+### Part C
+
+```{r}
+
+grocery_lm <- lm(Price ~ Product + Type, data = groceries)
+confint(grocery_lm, level = .95)
+
+```
+
+Compared to major supermarkets such as Albertsons, HEB, or Kroger, convenience stores typically add between 41 and 92 cents to the price of identical items with convenience stores serving as the reference point in this model.
+
+### Part D
+
+```{r}
+
+grocery_store_lm <- lm(Price ~ Product + Store, data = groceries)
+coef(grocery_store_lm, level = .95)
+
+```
+
+
+According to the regression analysis, Walmart and Kroger Fresh Fare offer the lowest prices for identical products among the stores compared. On the other end, Wheatsville Food Co-Op and Whole Foods are the most expensive options for the same items.
+
+### Part E
+
+When it comes to Central Market and HEB, Central Market does charge a little more—about 7 cents extra per product on average. But if you zoom out and look at all the stores in the study, the price difference between the cheapest and most expensive stores for the same product can be as much as $1.36. So, in the grand scheme of things, that 7-cent difference between Central Market and HEB isn’t all that significant.
+
+
+### Part F
+
+```{r}
+
+groceries <- groceries %>% mutate(Income10K = Income / 10000)
+
+model_grocery_f <- lm(Price ~ Product + Income10K, data = groceries)
+
+summary_f <- summary(model_grocery_f)
+
+income_coeff_info <- summary_f$coefficients["Income10K",]
+
+income_coeff <- income_coeff_info["Estimate"]
+
+income_coeff_sign <- sign(income_coeff)
+
+standardize_parameters(model_grocery_f)
+
+```
+
+The results show that people living in lower-income ZIP codes usually end up paying more for the same product compared to those in wealthier areas. Put simply, the higher the average income in a neighborhood, the less people tend to pay. For example, if the average income in a ZIP code goes up by one standard deviation, the expected price that residents pay for the same product drops by about 0.03 standard deviations.
+
+
+## Question 3
+
+### Part A
+True. Figure A1 clearly shows that as the percentage of minorities in a ZIP code goes up, so does the number of FAIR policies. The regression results back this up: for every one percentage point increase in the minority population, there’s an estimated increase of 0.014 in FAIR policies. The numbers are pretty convincing, with a confidence interval from 0.009 to 0.018 and a p-value of zero. In short, there’s strong evidence that more minorities in an area means more FAIR policies.
+
+### Part B
+We can’t really answer this one with the information given. While Figure B1 and Model B show a connection between minority share and the age of the housing stock, they don’t tell us how these two factors might work together to affect FAIR policies. Model E does include both minority percentage and housing age, but it doesn’t look at their combined effect. To really answer this question, we’d need a model that specifically tests how minority share and housing age interact.
+
+### Part C
+False. Looking at Figure C1, the relationship between minority percentage and FAIR policies looks about the same in both high and low fire risk ZIP codes. The regression model (Model C) confirms this, showing that the interaction between minority percentage and fire risk is tiny and not statistically significant (the coefficient is -0.001, and the p-value is 0.839). So, there’s no real evidence that fire risk changes the relationship between minority percentage and FAIR policies. In reality, the relationship seems equally strong no matter the fire risk.
+
+### Part D
+False. When income is added to the model, the effect of minority percentage on FAIR policies does get a bit smaller (from 0.014 to 0.01), but it’s still statistically significant. The confidence interval doesn’t include zero, and the p-value is still very low (0.002). So, even after accounting for income, minority percentage still matters. In other words, income explains some, but not all, of the relationship.
+
+### Part E
+True. Even when you account for fire risk, income, and housing age all at once, minority percentage still has a positive and significant effect on the number of FAIR policies (the estimate is 0.008, with a confidence interval from 0.003 to 0.014 and a p-value of 0.006). This means that, regardless of those other factors, areas with more minorities tend to have more FAIR policies.
